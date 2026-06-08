@@ -4,3 +4,8 @@ tsconfig.json
 .trae/**
 node_modules/**
 pnpm-lock.yaml
+release/**
+.git/**
+.DS_Store
+.pnpm-store/**
+.npm/**

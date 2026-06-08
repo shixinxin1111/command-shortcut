@@ -1,3 +1,8 @@
-node_modules
-out
+node_modules/
+out/
+release/
 *.vsix
+
+.DS_Store
+.pnpm-store/
+.npm/
