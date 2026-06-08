@@ -2,8 +2,9 @@
   "name": "command-shortcut",
   "displayName": "命令快捷方式",
   "description": "在 VS Code 侧边栏管理并执行平铺展示的终端命令列表。",
-  "version": "0.0.3",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
+  "publisher": "shixinxin",
   "author": {
     "name": "shixinxin.star",
     "email": "shixinxin.star@bytedance.com"
