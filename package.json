@@ -12,6 +12,7 @@
     "type": "git",
     "url": "file:///Users/bytedance/Desktop/trae-plugins/command-shortcut"
   },
+  "packageManager": "pnpm@10.33.0",
   "icon": "resources/command-shortcut.png",
   "engines": {
     "vscode": "^1.90.0"
@@ -110,7 +111,7 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "pnpm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./"
   },
