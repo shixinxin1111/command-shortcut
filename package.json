@@ -3,19 +3,17 @@
   "displayName": "命令快捷方式",
   "description": "在 VS Code 侧边栏管理并执行平铺展示的终端命令列表。",
   "version": "0.0.1",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "file:///Users/bytedance/Desktop/trae-plugins/command-shortcut"
+  },
   "icon": "resources/command-shortcut.png",
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
-  ],
-  "activationEvents": [
-    "onView:commandShortcutView",
-    "onCommand:commandShortcut.addCommand",
-    "onCommand:commandShortcut.editCommand",
-    "onCommand:commandShortcut.deleteCommand",
-    "onCommand:commandShortcut.runCommand"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -32,7 +30,9 @@
       "commandShortcut": [
         {
           "id": "commandShortcutView",
-          "name": "命令列表"
+          "name": "命令列表",
+          "contextualTitle": "命令快捷方式",
+          "icon": "resources/command-shortcut.svg"
         }
       ]
     },

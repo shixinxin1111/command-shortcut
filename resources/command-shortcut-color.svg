@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="40" y1="28" x2="216" y2="232" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A" />
+      <stop offset="0.55" stop-color="#111827" />
+      <stop offset="1" stop-color="#1E293B" />
+    </linearGradient>
+    <linearGradient id="glow" x1="146" y1="60" x2="210" y2="124" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FB7185" />
+      <stop offset="0.55" stop-color="#F59E0B" />
+      <stop offset="1" stop-color="#FDE68A" />
+    </linearGradient>
+    <clipPath id="outerClip">
+      <rect x="28" y="24" width="200" height="208" rx="44" />
+    </clipPath>
+    <filter id="shadow" x="12" y="8" width="232" height="240" filterUnits="userSpaceOnUse"
+      color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix" />
+      <feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+      <feOffset dy="14" />
+      <feGaussianBlur stdDeviation="14" />
+      <feComposite in2="hardAlpha" operator="out" />
+      <feColorMatrix values="0 0 0 0 0.0588235 0 0 0 0 0.0901961 0 0 0 0 0.184314 0 0 0 0.36 0" />
+      <feBlend in2="BackgroundImageFix" result="effect1_dropShadow_1_1" />
+      <feBlend in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape" />
+    </filter>
+    <filter id="softGlow" x="118" y="34" width="116" height="116" filterUnits="userSpaceOnUse"
+      color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix" />
+      <feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+      <feGaussianBlur stdDeviation="10" result="effect1_foregroundBlur_1_1" />
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="28" y="24" width="200" height="208" rx="44" fill="url(#bg)" />
+    <g clip-path="url(#outerClip)">
+      <rect x="28" y="24" width="200" height="42" fill="white" fill-opacity="0.05" />
+      <rect x="28" y="66" width="200" height="1" fill="white" fill-opacity="0.08" />
+    </g>
+    <rect x="28" y="24" width="200" height="208" rx="44" stroke="white" stroke-opacity="0.06" stroke-width="2" />
+    <circle cx="52" cy="46" r="5" fill="#FB7185" />
+    <circle cx="68" cy="46" r="5" fill="#FBBF24" />
+    <circle cx="84" cy="46" r="5" fill="#34D399" />
+    <rect x="50" y="78" width="144" height="116" rx="22" fill="#0B1220" />
+    <rect x="50" y="78" width="144" height="116" rx="22" stroke="white" stroke-opacity="0.08" stroke-width="2" />
+    <path d="M84 120L108 140L84 160" stroke="#7DD3FC" stroke-width="10" stroke-linecap="round"
+      stroke-linejoin="round" />
+    <path d="M124 160H166" stroke="#E2E8F0" stroke-width="10" stroke-linecap="round" />
+    <g filter="url(#softGlow)">
+      <circle cx="176" cy="92" r="28" fill="url(#glow)" fill-opacity="0.5" />
+    </g>
+    <path d="M176 56L145 113H174L160 160L212 92H182L196 56H176Z" fill="url(#glow)" />
+    <path d="M176 56L145 113H174L160 160L212 92H182L196 56H176Z" stroke="white" stroke-opacity="0.22" stroke-width="2"
+      stroke-linejoin="round" />
+  </g>
+</svg>
