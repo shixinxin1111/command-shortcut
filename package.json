@@ -1,0 +1,107 @@
+{
+  "name": "command-shortcut",
+  "displayName": "Command Shortcut",
+  "description": "Manage and run a flat list of terminal commands from the VS Code sidebar.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:commandShortcutView",
+    "onCommand:commandShortcut.addCommand",
+    "onCommand:commandShortcut.editCommand",
+    "onCommand:commandShortcut.deleteCommand",
+    "onCommand:commandShortcut.runCommand"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "commandShortcut",
+          "title": "Command Shortcut",
+          "icon": "resources/command-shortcut.svg"
+        }
+      ]
+    },
+    "views": {
+      "commandShortcut": [
+        {
+          "id": "commandShortcutView",
+          "name": "Commands"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "commandShortcut.addCommand",
+        "title": "Add Command",
+        "icon": "$(add)"
+      },
+      {
+        "command": "commandShortcut.editCommand",
+        "title": "Edit Command",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "commandShortcut.deleteCommand",
+        "title": "Delete Command",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "commandShortcut.runCommand",
+        "title": "Run Command",
+        "icon": "$(play)"
+      },
+      {
+        "command": "commandShortcut.refresh",
+        "title": "Refresh Commands",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "commandShortcut.addCommand",
+          "when": "view == commandShortcutView",
+          "group": "navigation"
+        },
+        {
+          "command": "commandShortcut.refresh",
+          "when": "view == commandShortcutView",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "commandShortcut.runCommand",
+          "when": "view == commandShortcutView && viewItem == command",
+          "group": "inline"
+        },
+        {
+          "command": "commandShortcut.editCommand",
+          "when": "view == commandShortcutView && viewItem == command",
+          "group": "inline@1"
+        },
+        {
+          "command": "commandShortcut.deleteCommand",
+          "when": "view == commandShortcutView && viewItem == command",
+          "group": "inline@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4"
+  }
+}
