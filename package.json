@@ -1,8 +1,9 @@
 {
   "name": "command-shortcut",
-  "displayName": "Command Shortcut",
-  "description": "Manage and run a flat list of terminal commands from the VS Code sidebar.",
+  "displayName": "命令快捷方式",
+  "description": "在 VS Code 侧边栏管理并执行平铺展示的终端命令列表。",
   "version": "0.0.1",
+  "icon": "resources/command-shortcut.png",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -22,7 +23,7 @@
       "activitybar": [
         {
           "id": "commandShortcut",
-          "title": "Command Shortcut",
+          "title": "命令快捷方式",
           "icon": "resources/command-shortcut.svg"
         }
       ]
@@ -31,34 +32,34 @@
       "commandShortcut": [
         {
           "id": "commandShortcutView",
-          "name": "Commands"
+          "name": "命令列表"
         }
       ]
     },
     "commands": [
       {
         "command": "commandShortcut.addCommand",
-        "title": "Add Command",
+        "title": "新增命令",
         "icon": "$(add)"
       },
       {
         "command": "commandShortcut.editCommand",
-        "title": "Edit Command",
+        "title": "编辑命令",
         "icon": "$(edit)"
       },
       {
         "command": "commandShortcut.deleteCommand",
-        "title": "Delete Command",
+        "title": "删除命令",
         "icon": "$(trash)"
       },
       {
         "command": "commandShortcut.runCommand",
-        "title": "Run Command",
+        "title": "执行命令",
         "icon": "$(play)"
       },
       {
         "command": "commandShortcut.refresh",
-        "title": "Refresh Commands",
+        "title": "刷新命令列表",
         "icon": "$(refresh)"
       }
     ],

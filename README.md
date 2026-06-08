@@ -1,4 +1,4 @@
-# Command Shortcut
+# 命令快捷方式
 
 一个简单的 VS Code 插件，用来在侧边栏维护一组平铺的常用命令，并直接发送到终端执行。
 
@@ -17,11 +17,11 @@ npm install
 npm run compile
 ```
 
-然后在 VS Code 中打开这个目录，按 `F5` 启动 Extension Development Host。
+然后在 VS Code 中打开这个目录，按 `F5` 启动扩展开发宿主窗口。
 
 ## 使用方式
 
-1. 在 Activity Bar 打开 `Command Shortcut`
+1. 在活动栏打开 `命令快捷方式`
 2. 点击标题栏的新增按钮
 3. 输入命令名称
 4. 输入实际执行的终端命令

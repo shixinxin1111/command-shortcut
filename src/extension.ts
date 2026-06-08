@@ -22,9 +22,9 @@ class CommandTreeItem extends vscode.TreeItem {
 
 class EmptyTreeItem extends vscode.TreeItem {
   constructor() {
-    super("No commands yet", vscode.TreeItemCollapsibleState.None);
-    this.description = "Use the add button in the title bar";
-    this.tooltip = "No commands yet";
+    super("还没有命令", vscode.TreeItemCollapsibleState.None);
+    this.description = "点击标题栏中的新增按钮来添加命令";
+    this.tooltip = "还没有命令";
     this.contextValue = "empty";
   }
 }
@@ -131,7 +131,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
       const updated = await provider.updateItem(target.id, values);
       if (!updated) {
-        vscode.window.showWarningMessage("Command item no longer exists.");
+        vscode.window.showWarningMessage("该命令已不存在。");
       }
     }),
     vscode.commands.registerCommand("commandShortcut.deleteCommand", async (treeItem?: CommandTreeItem) => {
@@ -141,11 +141,11 @@ export function activate(context: vscode.ExtensionContext): void {
       }
 
       const confirmed = await vscode.window.showWarningMessage(
-        `Delete command "${target.name}"?`,
+        `确定要删除命令“${target.name}”吗？`,
         { modal: true },
-        "Delete"
+        "删除"
       );
-      if (confirmed !== "Delete") {
+      if (confirmed !== "删除") {
         return;
       }
 
@@ -162,8 +162,8 @@ export function activate(context: vscode.ExtensionContext): void {
         terminal.show();
         terminal.sendText(target.command, true);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        vscode.window.showErrorMessage(`Failed to run command: ${message}`);
+        const message = error instanceof Error ? error.message : "未知错误";
+        vscode.window.showErrorMessage(`执行命令失败：${message}`);
       }
     }),
     vscode.commands.registerCommand("commandShortcut.refresh", () => {
@@ -178,12 +178,12 @@ async function promptForCommand(
   initialValue?: Pick<CommandItemData, "name" | "command">
 ): Promise<Pick<CommandItemData, "name" | "command"> | undefined> {
   const name = await vscode.window.showInputBox({
-    title: initialValue ? "Edit Command Name" : "Add Command Name",
-    prompt: "Enter the command name",
+    title: initialValue ? "编辑命令名称" : "新增命令名称",
+    prompt: "请输入命令名称",
     value: initialValue?.name ?? "",
     ignoreFocusOut: true,
     validateInput: (value) => {
-      return value.trim().length === 0 ? "Name is required." : undefined;
+      return value.trim().length === 0 ? "命令名称不能为空。" : undefined;
     },
   });
 
@@ -192,12 +192,12 @@ async function promptForCommand(
   }
 
   const command = await vscode.window.showInputBox({
-    title: initialValue ? "Edit Command" : "Add Command",
-    prompt: "Enter the terminal command to run",
+    title: initialValue ? "编辑命令内容" : "新增命令内容",
+    prompt: "请输入要执行的终端命令",
     value: initialValue?.command ?? "",
     ignoreFocusOut: true,
     validateInput: (value) => {
-      return value.trim().length === 0 ? "Command is required." : undefined;
+      return value.trim().length === 0 ? "命令内容不能为空。" : undefined;
     },
   });
 
