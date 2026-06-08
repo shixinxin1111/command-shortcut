@@ -2,7 +2,7 @@
   "name": "command-shortcut",
   "displayName": "命令快捷方式",
   "description": "在 VS Code 侧边栏管理并执行平铺展示的终端命令列表。",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "SEE LICENSE IN LICENSE",
   "author": {
     "name": "shixinxin.star",
@@ -65,6 +65,11 @@
         "command": "commandShortcut.refresh",
         "title": "刷新命令列表",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "commandShortcut.changeSort",
+        "title": "切换排序方式",
+        "icon": "$(list-ordered)"
       }
     ],
     "menus": {
@@ -75,9 +80,14 @@
           "group": "navigation"
         },
         {
-          "command": "commandShortcut.refresh",
+          "command": "commandShortcut.changeSort",
           "when": "view == commandShortcutView",
           "group": "navigation@1"
+        },
+        {
+          "command": "commandShortcut.refresh",
+          "when": "view == commandShortcutView",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
