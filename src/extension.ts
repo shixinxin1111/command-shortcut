@@ -1,10 +1,14 @@
 import * as crypto from "node:crypto";
 import * as vscode from "vscode";
 
+// Tree View 的唯一标识，需要与 package.json 中声明的 view id 保持一致。
 const VIEW_ID = "commandShortcutView";
+// 命令列表在 globalState 中的存储 key。
 const STORAGE_KEY = "commandShortcut.items";
+// 排序方式在 globalState 中的存储 key。
 const SORT_MODE_KEY = "commandShortcut.sortMode";
 
+// 所有支持的排序模式。该值会持久化保存，因此需要保持稳定。
 type SortMode =
   | "nameAsc"
   | "nameDesc"
@@ -13,6 +17,7 @@ type SortMode =
   | "timeAsc"
   | "timeDesc";
 
+// 命令列表中每一项的完整数据结构。
 type CommandItemData = {
   id: string;
   name: string;
@@ -20,8 +25,10 @@ type CommandItemData = {
   createdAt: number;
 };
 
+// 新增/编辑命令时只要求用户输入的字段。
 type CommandInputData = Pick<CommandItemData, "name" | "command">;
 
+// 排序弹窗的配置项，统一维护显示文案与实际模式值的映射关系。
 const SORT_MODE_ITEMS: Array<{
   mode: SortMode;
   label: string;
@@ -49,6 +56,7 @@ const SORT_MODE_ITEMS: Array<{
 
 class CommandTreeItem extends vscode.TreeItem {
   constructor(public readonly item: CommandItemData) {
+    // 列表主标题展示名称，description 展示真实命令，便于快速扫视。
     super(item.name, vscode.TreeItemCollapsibleState.None);
     this.id = item.id;
     this.description = item.command;
@@ -59,6 +67,7 @@ class CommandTreeItem extends vscode.TreeItem {
 
 class EmptyTreeItem extends vscode.TreeItem {
   constructor() {
+    // 空状态也作为一个普通 TreeItem 返回，省去额外的空态容器逻辑。
     super("还没有命令", vscode.TreeItemCollapsibleState.None);
     this.description = "点击标题栏中的新增按钮来添加命令";
     this.tooltip = "还没有命令";
@@ -67,18 +76,60 @@ class EmptyTreeItem extends vscode.TreeItem {
 }
 
 class TerminalExecutionTracker {
-  private readonly runningTerminals = new Set<vscode.Terminal>();
+  // 终端状态不只区分“是否运行”，还需要区分：
+  // - unknown: 扩展激活前已存在，当前状态未知，保守起见不复用
+  // - idle:    已确认空闲，可以复用
+  // - running: 已确认正在执行命令，不可复用
+  private readonly terminalStates = new Map<
+    vscode.Terminal,
+    "unknown" | "idle" | "running"
+  >();
+  private readonly managedTerminals = new Set<vscode.Terminal>();
+
+  initialize(terminals: readonly vscode.Terminal[]): void {
+    terminals.forEach((terminal) => {
+      if (!this.terminalStates.has(terminal)) {
+        this.markUnknown(terminal);
+      }
+    });
+  }
+
+  markManagedIdle(terminal: vscode.Terminal): void {
+    // 由扩展自己创建的终端，在首次发送命令前可以明确视为空闲。
+    this.managedTerminals.add(terminal);
+    this.terminalStates.set(terminal, "idle");
+  }
 
   markRunning(terminal: vscode.Terminal): void {
-    this.runningTerminals.add(terminal);
+    // 收到开始执行事件后，立刻标记为 running。
+    this.terminalStates.set(terminal, "running");
   }
 
   markIdle(terminal: vscode.Terminal): void {
-    this.runningTerminals.delete(terminal);
+    // 收到结束执行事件后，终端重新变为空闲。
+    this.terminalStates.set(terminal, "idle");
   }
 
-  isRunning(terminal: vscode.Terminal | undefined): boolean {
-    return terminal ? this.runningTerminals.has(terminal) : false;
+  markUnknown(terminal: vscode.Terminal): void {
+    // 对用户手动打开、或扩展无法证明其空闲状态的终端，统一按 unknown 处理。
+    this.terminalStates.set(terminal, "unknown");
+  }
+
+  handleTerminalOpened(terminal: vscode.Terminal): void {
+    // 用户手动打开的终端默认不复用；扩展自己创建的终端保持 idle。
+    if (!this.managedTerminals.has(terminal)) {
+      this.markUnknown(terminal);
+    }
+  }
+
+  isReusable(terminal: vscode.Terminal | undefined): boolean {
+    // 只有明确处于 idle 的终端才允许复用。
+    return terminal ? this.terminalStates.get(terminal) === "idle" : false;
+  }
+
+  delete(terminal: vscode.Terminal): void {
+    this.managedTerminals.delete(terminal);
+    this.terminalStates.delete(terminal);
   }
 }
 
@@ -89,6 +140,7 @@ class CommandProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   refresh(): void {
+    // 通知 Tree View 重新取数并刷新显示。
     this.onDidChangeTreeDataEmitter.fire();
   }
 
@@ -97,6 +149,7 @@ class CommandProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   }
 
   getChildren(): vscode.ProviderResult<vscode.TreeItem[]> {
+    // 当前视图是纯扁平列表，没有分组或层级结构。
     const items = this.getSortedItems();
     if (items.length === 0) {
       return [new EmptyTreeItem()];
@@ -106,6 +159,8 @@ class CommandProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   }
 
   getItems(): CommandItemData[] {
+    // 从持久化状态中取出数据，并在这里做统一校验与轻量兼容处理，
+    // 避免后续逻辑重复判断原始数据是否合法。
     const rawItems = this.context.globalState.get<unknown[]>(STORAGE_KEY, []);
     return rawItems.filter(isCommandItemData).map((item, index) => ({
       id: item.id,
@@ -116,6 +171,7 @@ class CommandProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   }
 
   private getSortedItems(): CommandItemData[] {
+    // 排序只影响展示顺序，不改动真实存储顺序。
     return [...this.getItems()].sort(
       createCommandItemComparator(this.getSortMode()),
     );
@@ -155,21 +211,25 @@ class CommandProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   }
 
   private async saveItems(items: CommandItemData[]): Promise<void> {
+    // 每次持久化后立刻刷新视图，保证界面和状态一致。
     await this.context.globalState.update(STORAGE_KEY, items);
     this.refresh();
   }
 
   getSortMode(): SortMode {
+    // 历史值不存在或非法时，回退到默认的命令正序。
     const sortMode = this.context.globalState.get<string>(SORT_MODE_KEY);
     return isSortMode(sortMode) ? sortMode : "commandAsc";
   }
 
   async setSortMode(sortMode: SortMode): Promise<void> {
+    // 排序方式需要跨会话保存，保证下次打开编辑器仍能沿用。
     await this.context.globalState.update(SORT_MODE_KEY, sortMode);
     this.refresh();
   }
 
   async migrateLegacyItems(): Promise<void> {
+    // 兼容旧数据中没有 createdAt 的情况，避免时间排序失效。
     const items = this.getItems();
     if (items.every((item) => item.createdAt > 0)) {
       return;
@@ -184,12 +244,19 @@ class CommandProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
+  // 扩展激活入口：初始化数据、注册视图、注册事件与命令。
   const provider = new CommandProvider(context);
   const terminalExecutionTracker = new TerminalExecutionTracker();
   void provider.migrateLegacyItems();
+  terminalExecutionTracker.initialize(vscode.window.terminals);
 
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider(VIEW_ID, provider),
+    vscode.window.onDidOpenTerminal((terminal) => {
+      // 只有扩展自己创建的终端才会在打开后保持 idle；
+      // 用户手动打开的终端一律先按 unknown 处理。
+      terminalExecutionTracker.handleTerminalOpened(terminal);
+    }),
     vscode.window.onDidStartTerminalShellExecution((event) => {
       terminalExecutionTracker.markRunning(event.terminal);
     }),
@@ -197,7 +264,7 @@ export function activate(context: vscode.ExtensionContext): void {
       terminalExecutionTracker.markIdle(event.terminal);
     }),
     vscode.window.onDidCloseTerminal((terminal) => {
-      terminalExecutionTracker.markIdle(terminal);
+      terminalExecutionTracker.delete(terminal);
     }),
     vscode.commands.registerCommand("commandShortcut.addCommand", async () => {
       const values = await promptForCommand();
@@ -205,6 +272,7 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
 
+      // 使用 UUID 作为稳定主键，避免名称或命令重复时无法区分。
       await provider.addItem({
         id: createId(),
         createdAt: Date.now(),
@@ -260,12 +328,19 @@ export function activate(context: vscode.ExtensionContext): void {
 
         try {
           const activeTerminal = vscode.window.activeTerminal;
-          const terminal =
-            activeTerminal &&
-            !terminalExecutionTracker.isRunning(activeTerminal)
-              ? activeTerminal
-              : vscode.window.createTerminal();
+          let terminal: vscode.Terminal;
+          if (terminalExecutionTracker.isReusable(activeTerminal)) {
+            terminal = activeTerminal!;
+          } else {
+            // 当前终端正在运行，或其状态未知时，直接新建终端执行，
+            // 避免把新命令插入已有的长运行任务中。
+            terminal = vscode.window.createTerminal();
+            terminalExecutionTracker.markManagedIdle(terminal);
+          }
+
+          // 发送命令前先标记为 running，避免用户连续点击时被误判为空闲。
           terminal.show();
+          terminalExecutionTracker.markRunning(terminal);
           terminal.sendText(target.command, true);
         } catch (error) {
           const message = error instanceof Error ? error.message : "未知错误";
@@ -292,6 +367,7 @@ export function deactivate(): void {}
 async function promptForCommand(
   initialValue?: CommandInputData,
 ): Promise<CommandInputData | undefined> {
+  // 新增和编辑共用同一套输入流程，通过 initialValue 区分场景。
   const name = await vscode.window.showInputBox({
     title: initialValue ? "编辑命令名称" : "新增命令名称",
     prompt: "请输入命令名称",
@@ -333,6 +409,7 @@ function createId(): string {
 async function promptForSortMode(
   currentSortMode: SortMode,
 ): Promise<SortMode | undefined> {
+  // 当前排序方式会在列表里用勾选图标标记出来，便于用户确认当前状态。
   const quickPickItems = SORT_MODE_ITEMS.map((item) => ({
     label:
       item.mode === currentSortMode ? `$(check) ${item.label}` : item.label,
@@ -352,6 +429,7 @@ async function promptForSortMode(
 function createCommandItemComparator(
   sortMode: SortMode,
 ): (a: CommandItemData, b: CommandItemData) => number {
+  // 每种排序都尽量提供二级、三级比较，保证结果稳定，不会频繁跳动。
   switch (sortMode) {
     case "nameAsc":
       return (a, b) =>
@@ -387,6 +465,8 @@ function createCommandItemComparator(
 }
 
 function compareText(a: string, b: string): number {
+  // 先比较首字符，再比较完整文本，既满足“首字母感知排序”，
+  // 也能在首字符相同时得到更稳定的结果。
   const firstCharResult = getFirstChar(a).localeCompare(
     getFirstChar(b),
     "zh-Hans-CN",
@@ -408,6 +488,7 @@ function compareByTime(a: CommandItemData, b: CommandItemData): number {
 }
 
 function getFirstChar(value: string): string {
+  // 忽略前导空格，避免缩进或误输入影响排序。
   return value.trimStart().charAt(0);
 }
 
@@ -416,6 +497,7 @@ function isSortMode(value: string | undefined): value is SortMode {
 }
 
 function isCommandItemData(value: unknown): value is CommandItemData {
+  // 运行时类型保护。globalState 属于外部数据源，读取后先校验再使用更稳妥。
   if (!value || typeof value !== "object") {
     return false;
   }
