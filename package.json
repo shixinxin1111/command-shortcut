@@ -2,7 +2,7 @@
   "name": "command-shortcut",
   "displayName": "命令快捷方式",
   "description": "在 VS Code 侧边栏管理并执行平铺展示的终端命令列表。",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "license": "SEE LICENSE IN LICENSE",
   "publisher": "shixinxin",
   "author": {
@@ -11,7 +11,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "file:///Users/bytedance/Desktop/trae-plugins/command-shortcut"
+    "url": "https://github.com/shixinxin1111/command-shortcut.git"
+  },
+  "homepage": "https://github.com/shixinxin1111/command-shortcut#readme",
+  "bugs": {
+    "url": "https://github.com/shixinxin1111/command-shortcut/issues"
   },
   "packageManager": "pnpm@10.33.0",
   "icon": "resources/command-shortcut.png",
@@ -118,7 +122,8 @@
     "vscode:prepublish": "pnpm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "mkdir -p release && pnpm dlx @vscode/vsce package -o \"release/${npm_package_name}-${npm_package_version}.vsix\""
+    "package": "mkdir -p release && pnpm dlx @vscode/vsce package -o \"release/${npm_package_name}-${npm_package_version}.vsix\"",
+    "publish": "pnpm dlx @vscode/vsce publish"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
