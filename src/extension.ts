@@ -75,64 +75,6 @@ class EmptyTreeItem extends vscode.TreeItem {
   }
 }
 
-class TerminalExecutionTracker {
-  // 终端状态不只区分“是否运行”，还需要区分：
-  // - unknown: 扩展激活前已存在，当前状态未知，保守起见不复用
-  // - idle:    已确认空闲，可以复用
-  // - running: 已确认正在执行命令，不可复用
-  private readonly terminalStates = new Map<
-    vscode.Terminal,
-    "unknown" | "idle" | "running"
-  >();
-  private readonly managedTerminals = new Set<vscode.Terminal>();
-
-  initialize(terminals: readonly vscode.Terminal[]): void {
-    terminals.forEach((terminal) => {
-      if (!this.terminalStates.has(terminal)) {
-        this.markUnknown(terminal);
-      }
-    });
-  }
-
-  markManagedIdle(terminal: vscode.Terminal): void {
-    // 由扩展自己创建的终端，在首次发送命令前可以明确视为空闲。
-    this.managedTerminals.add(terminal);
-    this.terminalStates.set(terminal, "idle");
-  }
-
-  markRunning(terminal: vscode.Terminal): void {
-    // 收到开始执行事件后，立刻标记为 running。
-    this.terminalStates.set(terminal, "running");
-  }
-
-  markIdle(terminal: vscode.Terminal): void {
-    // 收到结束执行事件后，终端重新变为空闲。
-    this.terminalStates.set(terminal, "idle");
-  }
-
-  markUnknown(terminal: vscode.Terminal): void {
-    // 对用户手动打开、或扩展无法证明其空闲状态的终端，统一按 unknown 处理。
-    this.terminalStates.set(terminal, "unknown");
-  }
-
-  handleTerminalOpened(terminal: vscode.Terminal): void {
-    // 用户手动打开的终端默认不复用；扩展自己创建的终端保持 idle。
-    if (!this.managedTerminals.has(terminal)) {
-      this.markUnknown(terminal);
-    }
-  }
-
-  isReusable(terminal: vscode.Terminal | undefined): boolean {
-    // 只有明确处于 idle 的终端才允许复用。
-    return terminal ? this.terminalStates.get(terminal) === "idle" : false;
-  }
-
-  delete(terminal: vscode.Terminal): void {
-    this.managedTerminals.delete(terminal);
-    this.terminalStates.delete(terminal);
-  }
-}
-
 class CommandProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<void>();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
@@ -246,25 +188,21 @@ class CommandProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 export function activate(context: vscode.ExtensionContext): void {
   // 扩展激活入口：初始化数据、注册视图、注册事件与命令。
   const provider = new CommandProvider(context);
-  const terminalExecutionTracker = new TerminalExecutionTracker();
+  let lastUsedTerminal = vscode.window.activeTerminal;
   void provider.migrateLegacyItems();
-  terminalExecutionTracker.initialize(vscode.window.terminals);
 
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider(VIEW_ID, provider),
-    vscode.window.onDidOpenTerminal((terminal) => {
-      // 只有扩展自己创建的终端才会在打开后保持 idle；
-      // 用户手动打开的终端一律先按 unknown 处理。
-      terminalExecutionTracker.handleTerminalOpened(terminal);
-    }),
-    vscode.window.onDidStartTerminalShellExecution((event) => {
-      terminalExecutionTracker.markRunning(event.terminal);
-    }),
-    vscode.window.onDidEndTerminalShellExecution((event) => {
-      terminalExecutionTracker.markIdle(event.terminal);
+    vscode.window.onDidChangeActiveTerminal((terminal) => {
+      // 只记录用户明确激活过的终端，避免兜底选中不确定的旧终端。
+      if (terminal) {
+        lastUsedTerminal = terminal;
+      }
     }),
     vscode.window.onDidCloseTerminal((terminal) => {
-      terminalExecutionTracker.delete(terminal);
+      if (lastUsedTerminal === terminal) {
+        lastUsedTerminal = undefined;
+      }
     }),
     vscode.commands.registerCommand("commandShortcut.addCommand", async () => {
       const values = await promptForCommand();
@@ -327,20 +265,14 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         try {
-          const activeTerminal = vscode.window.activeTerminal;
-          let terminal: vscode.Terminal;
-          if (terminalExecutionTracker.isReusable(activeTerminal)) {
-            terminal = activeTerminal!;
-          } else {
-            // 当前终端正在运行，或其状态未知时，直接新建终端执行，
-            // 避免把新命令插入已有的长运行任务中。
-            terminal = vscode.window.createTerminal();
-            terminalExecutionTracker.markManagedIdle(terminal);
-          }
-
-          // 发送命令前先标记为 running，避免用户连续点击时被误判为空闲。
+          // 始终优先复用当前活动终端；若终端面板暂时失焦，则复用最近一次
+          // 明确激活或执行过的终端；只有完全没有可确定目标时才新建。
+          const terminal =
+            vscode.window.activeTerminal ??
+            lastUsedTerminal ??
+            vscode.window.createTerminal();
+          lastUsedTerminal = terminal;
           terminal.show();
-          terminalExecutionTracker.markRunning(terminal);
           terminal.sendText(target.command, true);
         } catch (error) {
           const message = error instanceof Error ? error.message : "未知错误";
