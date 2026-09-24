@@ -1,19 +1,16 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "Node16",
     "target": "ES2020",
-    "lib": [
-      "ES2020"
-    ],
+    "lib": ["ES2020"],
     "outDir": "out",
     "rootDir": "src",
     "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Node16",
+    "types": ["node", "vscode"],
     "skipLibCheck": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src", "vscode.proposed.*.d.ts"]
 }

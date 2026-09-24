@@ -2,7 +2,7 @@
   "name": "command-shortcut",
   "displayName": "命令快捷方式",
   "description": "在 VS Code 侧边栏管理并执行平铺展示的终端命令列表。",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "license": "SEE LICENSE IN LICENSE",
   "publisher": "shixinxin",
   "author": {
@@ -20,13 +20,16 @@
   "packageManager": "pnpm@10.33.0",
   "icon": "resources/command-shortcut.png",
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.107.0"
   },
   "categories": [
     "Other"
   ],
   "activationEvents": [
     "onStartupFinished"
+  ],
+  "enabledApiProposals": [
+    "terminalCompletionProvider"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -121,13 +124,17 @@
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
     "compile": "tsc -p ./",
+    "dev": "pnpm run compile && code --enable-proposed-api=shixinxin.command-shortcut --extensionDevelopmentPath=\"$PWD\"",
+    "dev:insiders": "pnpm run compile && code-insiders --enable-proposed-api=shixinxin.command-shortcut --extensionDevelopmentPath=\"$PWD\"",
+    "get-dts": "dts dev",
     "watch": "tsc -watch -p ./",
     "package": "mkdir -p release && pnpm dlx @vscode/vsce package -o \"release/${npm_package_name}-${npm_package_version}.vsix\"",
     "publish": "pnpm dlx @vscode/vsce publish"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
-    "@types/vscode": "^1.90.0",
+    "@types/vscode": "1.107.0",
+    "@vscode/dts": "^0.4.1",
     "typescript": "^5.5.4"
   }
 }

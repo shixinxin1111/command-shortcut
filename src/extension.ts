@@ -191,6 +191,21 @@ export function activate(context: vscode.ExtensionContext): void {
   let lastUsedTerminal = vscode.window.activeTerminal;
   void provider.migrateLegacyItems();
 
+  try {
+    context.subscriptions.push(
+      vscode.window.registerTerminalCompletionProvider({
+        provideTerminalCompletions(_terminal, completionContext) {
+          return createTerminalCompletionItems(
+            provider.getItems(),
+            completionContext,
+          );
+        },
+      }),
+    );
+  } catch {
+    // 二开 IDE 未开放 Proposed API 时，保留命令管理等基础功能。
+  }
+
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider(VIEW_ID, provider),
     vscode.window.onDidChangeActiveTerminal((terminal) => {
@@ -295,6 +310,77 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {}
+
+function createTerminalCompletionItems(
+  items: CommandItemData[],
+  context: vscode.TerminalCompletionContext,
+): vscode.TerminalCompletionItem[] {
+  const query = context.commandLine.slice(0, context.cursorIndex).trim();
+  const replacementRange: readonly [number, number] = [
+    0,
+    context.commandLine.length,
+  ];
+
+  return items
+    .map((item) => ({
+      item,
+      score: getFuzzyMatchScore(item.command, query),
+    }))
+    .filter(
+      (candidate): candidate is { item: CommandItemData; score: number } =>
+        candidate.score !== undefined,
+    )
+    .sort(
+      (a, b) =>
+        a.score - b.score ||
+        compareText(a.item.command, b.item.command) ||
+        compareText(a.item.name, b.item.name),
+    )
+    .map(({ item }) => {
+      const completionItem = new vscode.TerminalCompletionItem(
+        {
+          label: item.command,
+          description: item.name,
+        },
+        replacementRange,
+        vscode.TerminalCompletionItemKind.Alias,
+      );
+      completionItem.detail = item.name;
+      return completionItem;
+    });
+}
+
+function getFuzzyMatchScore(value: string, query: string): number | undefined {
+  const normalizedValue = value.toLocaleLowerCase();
+  const normalizedQuery = query.toLocaleLowerCase();
+  if (normalizedQuery.length === 0) {
+    return 0;
+  }
+  if (normalizedValue.startsWith(normalizedQuery)) {
+    return 0;
+  }
+  if (
+    normalizedValue
+      .split(/\s+/)
+      .some((part) => part.startsWith(normalizedQuery))
+  ) {
+    return 1;
+  }
+  if (normalizedValue.includes(normalizedQuery)) {
+    return 2;
+  }
+
+  let valueIndex = 0;
+  for (const queryCharacter of normalizedQuery) {
+    valueIndex = normalizedValue.indexOf(queryCharacter, valueIndex);
+    if (valueIndex === -1) {
+      return undefined;
+    }
+    valueIndex += 1;
+  }
+
+  return 3;
+}
 
 async function promptForCommand(
   initialValue?: CommandInputData,

@@ -11,6 +11,7 @@
 - 支持切换排序方式，并记住上次选择
 - 支持新增、编辑、删除命令
 - 支持一键执行命令
+- 支持在集成终端中对已配置命令进行前缀和模糊匹配（实验）
 - 命令列表会自动保存在扩展本地状态中
 - 执行命令时只复用明确空闲的终端；如果当前终端正在运行或状态未知，会自动新建终端
 
@@ -69,6 +70,34 @@
 - 时间倒序
 
 插件会记住你上一次选择的排序方式，下次打开编辑器后仍然会按该方式显示。
+
+### 终端命令匹配（实验）
+
+该功能使用 VS Code Proposed API，需要 VS Code Insiders。启动扩展开发宿主前，在设置中开启终端建议，并允许回车直接执行选中的候选：
+
+```json
+{
+  "terminal.integrated.suggest.enabled": true,
+  "terminal.integrated.suggest.runOnEnter": "always"
+}
+```
+
+首次开发时安装依赖并同步 Proposed API 类型：
+
+```bash
+pnpm install
+pnpm run get-dts
+```
+
+当前 VS Code 版本包含该 Proposed API 时，可直接启动扩展开发宿主：
+
+```bash
+pnpm run dev
+```
+
+若普通 VS Code 拒绝启用 Proposed API，请安装 VS Code Insiders 后执行 `pnpm run dev:insiders`。
+
+在新窗口中配置几条命令并新建集成终端。输入命令前缀或不连续字符后，终端会展示匹配候选；可使用上下方向键选择并按回车执行。若候选未自动弹出，可按 `Ctrl+Space` 手动触发。
 
 ## 适用场景
 
